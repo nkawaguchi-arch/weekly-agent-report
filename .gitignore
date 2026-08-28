@@ -1,0 +1,4 @@
+# 秘匿情報・生成物はコミットしない
+.env
+node_modules/
+report.json

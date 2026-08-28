@@ -1,0 +1,50 @@
+name: weekly-agent-report
+
+# 30分ごとに report.ts を実行し、Notion のダッシュボード（詳細DB・週次ログ）を更新する。
+# report.ts は upsert（同じエージェント/週は上書き）なので、繰り返し実行しても行は重複しない。
+
+on:
+  schedule:
+    # 30分ごと（UTC基準。GitHubのcronは負荷により多少遅延することがある）
+    - cron: "*/30 * * * *"
+  workflow_dispatch: {} # 手動実行ボタンも有効化
+
+# 同時実行を1本に抑える（前の実行が長引いても多重起動しない）
+concurrency:
+  group: weekly-agent-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install deps
+        run: npm install
+
+      - name: Run report
+        run: npm run report:ci
+        env:
+          # --- 秘匿情報（リポジトリの Settings > Secrets and variables > Actions で登録）---
+          NOTION_ADMIN_TOKEN: ${{ secrets.NOTION_ADMIN_TOKEN }} # ① 組織bot token（workflows:read）
+          SPACE_ID: ${{ secrets.SPACE_ID }}                     # ② 対象スペースUUID
+          NOTION_API_TOKEN: ${{ secrets.NOTION_API_TOKEN }}     # ③ 書き込み用（PAT可）
+          DEPT_DB_TOKEN: ${{ secrets.DEPT_DB_TOKEN }}           # 部署マスタ(People DB)読み取り用（APAC側）
+          # --- 秘匿ではないが環境固有の設定（Settings > Secrets and variables > Actions > Variables タブで登録）---
+          WINDOW_DAYS: "7"
+          OUTPUT_DATABASE_ID: ${{ vars.OUTPUT_DATABASE_ID }}
+          WEEKLY_LOG_DATABASE_ID: ${{ vars.WEEKLY_LOG_DATABASE_ID }}
+          MONTHLY_LOG_DATABASE_ID: ${{ vars.MONTHLY_LOG_DATABASE_ID }}
+          DAILY_LOG_DATABASE_ID: ${{ vars.DAILY_LOG_DATABASE_ID }}
+          DEPT_DB_ID: ${{ vars.DEPT_DB_ID }}
+          # 書き戻し（高影響・有効化中）。★ Admin token(secret) が workflows:write であること
+          ENABLE_CREDIT_LIMIT_WRITEBACK: "true"
+          ENABLE_STATUS_WRITEBACK: "true"

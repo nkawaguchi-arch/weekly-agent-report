@@ -1,0 +1,19 @@
+{
+  "name": "weekly-agent-report",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Notion Admin API からカスタムエージェントの週次稼働・クレジットレポートを生成する参考スクリプト",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "report": "node --env-file=.env --experimental-strip-types report.ts",
+    "report:tsx": "tsx --env-file=.env report.ts",
+    "report:ci": "tsx report.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
